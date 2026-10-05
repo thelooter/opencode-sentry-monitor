@@ -84,7 +84,7 @@ function redact(value: unknown, state: RedactionState, depth: number): unknown {
   let captured = 0;
 
   for (const key in record) {
-    if (!Object.prototype.hasOwnProperty.call(record, key)) {
+    if (!Object.hasOwn(record, key)) {
       continue;
     }
 

@@ -1,12 +1,12 @@
+import { basename } from "node:path";
 import type { Plugin, PluginInput } from "@opencode-ai/plugin";
 import * as Sentry from "@sentry/node";
-import { basename } from "node:path";
 import {
   loadPluginConfig,
   type PluginLogger,
   type ResolvedPluginConfig,
-} from "./config";
-import { serializeAttribute } from "./serialize";
+} from "./config.js";
+import { serializeAttribute } from "./serialize.js";
 
 type SentrySpan = ReturnType<typeof Sentry.startInactiveSpan>;
 
@@ -67,21 +67,17 @@ function createLogger(_input: PluginInput): PluginLogger {
     }
 
     if (level === "error") {
-      // eslint-disable-next-line no-console
       console.error(prefix, extra ?? "");
       return;
     }
     if (level === "warn") {
-      // eslint-disable-next-line no-console
       console.warn(prefix, extra ?? "");
       return;
     }
     if (level === "debug") {
-      // eslint-disable-next-line no-console
       console.debug(prefix, extra ?? "");
       return;
     }
-    // eslint-disable-next-line no-console
     console.info(prefix, extra ?? "");
   };
 
@@ -721,8 +717,12 @@ function rememberCompletedAssistantMessage(
     return false;
   }
 
-  if (state.completedAssistantMessages.size >= MAX_COMPLETED_ASSISTANT_MESSAGES) {
-    const oldestMessageID = state.completedAssistantMessages.values().next().value;
+  if (
+    state.completedAssistantMessages.size >= MAX_COMPLETED_ASSISTANT_MESSAGES
+  ) {
+    const oldestMessageID = state.completedAssistantMessages
+      .values()
+      .next().value;
     if (typeof oldestMessageID === "string") {
       state.completedAssistantMessages.delete(oldestMessageID);
     }
@@ -744,7 +744,8 @@ export const SentryObservabilityPlugin: Plugin = async (input) => {
   const projectName = getProjectName(config, input);
   const agentName = getAgentName(config, projectName);
   const shouldCacheMessageText =
-    config.includeMessageUsageSpans && (config.recordInputs || config.recordOutputs);
+    config.includeMessageUsageSpans &&
+    (config.recordInputs || config.recordOutputs);
 
   initSentry(config, logger);
 
@@ -875,11 +876,16 @@ export const SentryObservabilityPlugin: Plugin = async (input) => {
         const span = toolSpans.get(key);
         if (!span) {
           untrackToolSpanKey(hookInput.sessionID, key);
-          logDiagnosticsLazy(logger, config, "Missing tool span for tool.execute.after", () => ({
-            sessionID: hookInput.sessionID,
-            callID: hookInput.callID,
-            tool: hookInput.tool,
-          }));
+          logDiagnosticsLazy(
+            logger,
+            config,
+            "Missing tool span for tool.execute.after",
+            () => ({
+              sessionID: hookInput.sessionID,
+              callID: hookInput.callID,
+              tool: hookInput.tool,
+            }),
+          );
           return;
         }
 
@@ -890,10 +896,7 @@ export const SentryObservabilityPlugin: Plugin = async (input) => {
           : undefined;
 
         if (config.recordOutputs && serializedToolOutput !== undefined) {
-          span.setAttribute(
-            "gen_ai.tool.output",
-            serializedToolOutput,
-          );
+          span.setAttribute("gen_ai.tool.output", serializedToolOutput);
         }
 
         setSpanStatus(span, isError);
@@ -1054,7 +1057,8 @@ export const SentryObservabilityPlugin: Plugin = async (input) => {
               break;
             }
 
-            if (typeof info.time.completed !== "number") {
+            const completedAt = info.time.completed;
+            if (typeof completedAt !== "number") {
               break;
             }
 
@@ -1209,7 +1213,7 @@ export const SentryObservabilityPlugin: Plugin = async (input) => {
                 );
               }
 
-              const durationMs = info.time.completed! - info.time.created;
+              const durationMs = completedAt - info.time.created;
               if (durationMs > 0) {
                 Sentry.metrics.distribution(
                   "gen_ai.client.response.duration",
