@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir smoke && tar -xzf opencode-sentry-monitor-*.tgz -C smoke
           cd smoke/package && npm install --omit=dev --no-audit --no-fund
-          node -e "import('./dist/index.js').then((m) => { if (!m.default) throw new Error('missing default export') })"
+          node -e "import('./dist/index.js').then((m) => { if (typeof m.default?.id !== 'string' || typeof m.default.setup !== 'function') throw new Error('default export is not an OpenCode plugin') })"
       - uses: actions/upload-artifact@v7
         with:
           name: package
