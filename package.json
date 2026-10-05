@@ -1,7 +1,7 @@
 {
   "name": "opencode-sentry-monitor",
   "version": "0.1.7",
-  "description": "Sentry AI Monitoring plugin for OpenCode sessions and tool calls",
+  "description": "Sentry AI Monitoring plugin for OpenCode v2 agent runs, model requests, and tool calls",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
-    "@opencode-ai/plugin": "^1.2.16",
+    "@opencode/plugin": "^2.0.23",
     "@types/node": "^22.13.10",
     "typescript": "^5.8.2",
     "vitest": "^5.0.3"
