@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm pack
+      - name: Load the packed plugin
+        run: |
+          mkdir smoke && tar -xzf opencode-sentry-monitor-*.tgz -C smoke
+          cd smoke/package && npm install --omit=dev --no-audit --no-fund
+          node -e "import('./dist/index.js').then((m) => { if (!m.default) throw new Error('missing default export') })"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: opencode-sentry-monitor-*.tgz
+          if-no-files-found: error

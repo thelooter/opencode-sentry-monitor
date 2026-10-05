@@ -135,19 +135,38 @@ Example config for team attribution:
 }
 ```
 
-## Local Development
+## Development
 
 ```bash
 npm install
-npm run typecheck
+npm run check   # lint, typecheck, and tests
 npm run build
 ```
 
-## Publish
+| Script | What it does |
+|--------|--------------|
+| `npm run lint` | Lint and format check with [Biome](https://biomejs.dev) |
+| `npm run format` | Apply formatting and safe lint fixes |
+| `npm run typecheck` | Type-check sources and tests |
+| `npm test` | Run the [Vitest](https://vitest.dev) suite |
+| `npm run build` | Compile `src/` to `dist/` |
+
+CI runs the same checks on every pull request and push to `main`, and uploads the packed tarball as a workflow artifact.
+
+## Releasing
+
+Releases live on the [GitHub releases page](https://github.com/thelooter/opencode-sentry-monitor/releases). Each one has the packed `opencode-sentry-monitor-<version>.tgz` and a `SHA256SUMS` file attached. Tarballs are never committed to the repository.
+
+To cut a release, run the **Release** workflow from the Actions tab and pick a version bump. It bumps `package.json`, runs the checks, pushes the version commit and tag, and publishes the release with generated notes.
+
+Pushing a tag does the same thing if you would rather bump locally:
 
 ```bash
-npm publish
+npm version minor
+git push --follow-tags
 ```
+
+Versions with a pre-release suffix (`1.2.0-rc.0`) are published as GitHub pre-releases.
 
 ## Notes
 
