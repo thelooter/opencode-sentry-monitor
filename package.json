@@ -17,9 +17,13 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepublishOnly": "npm run typecheck && npm run build"
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "prepack": "npm run build"
   },
   "keywords": [
     "opencode",
@@ -31,6 +35,16 @@
   "author": "Scott Tolinski",
   "homepage": "https://tolin.ski",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thelooter/opencode-sentry-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thelooter/opencode-sentry-monitor/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -39,8 +53,10 @@
     "strip-json-comments": "^5.0.1"
   },
   "devDependencies": {
-    "@opencode-ai/plugin": "latest",
+    "@biomejs/biome": "2.5.15",
+    "@opencode-ai/plugin": "^1.2.16",
     "@types/node": "^22.13.10",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^5.0.3"
   }
 }

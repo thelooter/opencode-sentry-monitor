@@ -1,8 +1,8 @@
-import type { PluginInput } from "@opencode-ai/plugin";
 import { constants as fsConstants } from "node:fs";
 import { access, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
+import type { PluginInput } from "@opencode-ai/plugin";
 import stripJsonComments from "strip-json-comments";
 
 const CONFIG_FILE_NAMES = [
