@@ -2,7 +2,6 @@ import { constants as fsConstants } from "node:fs";
 import { access, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
-import type { PluginInput } from "@opencode-ai/plugin";
 import stripJsonComments from "strip-json-comments";
 
 const CONFIG_FILE_NAMES = [
@@ -72,6 +71,15 @@ export interface ResolvedPluginConfig {
   includeSessionEvents: boolean;
   enableMetrics: boolean;
   tags: Record<string, string>;
+}
+
+export interface ConfigInput {
+  /** Directory OpenCode was opened in. */
+  directory: string;
+  /** Root of the project that directory belongs to, when it differs. */
+  projectDirectory?: string;
+  /** Options given for this plugin in the OpenCode `plugins` config. */
+  options?: Readonly<Record<string, unknown>>;
 }
 
 export interface LoadedPluginConfig {
@@ -285,7 +293,7 @@ function resolveMaybeRelative(filePath: string, cwd: string): string {
   return isAbsolute(filePath) ? filePath : resolve(cwd, filePath);
 }
 
-async function getCandidatePaths(input: PluginInput): Promise<string[]> {
+function getCandidatePaths(input: ConfigInput): string[] {
   const candidates: string[] = [];
 
   const explicitPath = process.env.OPENCODE_SENTRY_CONFIG;
@@ -296,6 +304,9 @@ async function getCandidatePaths(input: PluginInput): Promise<string[]> {
   const configDirs: string[] = [];
 
   addUnique(configDirs, join(input.directory, ".opencode"));
+  if (input.projectDirectory) {
+    addUnique(configDirs, join(input.projectDirectory, ".opencode"));
+  }
 
   if (process.env.OPENCODE_CONFIG_DIR) {
     addUnique(configDirs, resolve(process.env.OPENCODE_CONFIG_DIR));
@@ -421,10 +432,10 @@ function addEnvOverrides(
 }
 
 export async function loadPluginConfig(
-  input: PluginInput,
+  input: ConfigInput,
   logger: PluginLogger,
 ): Promise<LoadedPluginConfig | null> {
-  const candidates = await getCandidatePaths(input);
+  const candidates = getCandidatePaths(input);
 
   let source = "environment";
   let raw: Record<string, unknown> = {};
@@ -438,6 +449,14 @@ export async function loadPluginConfig(
     raw = parseConfigContent(content, candidate);
     source = candidate;
     break;
+  }
+
+  const options = input.options ?? {};
+  if (Object.keys(options).length > 0) {
+    raw = { ...raw, ...options };
+    if (source === "environment") {
+      source = "plugin options";
+    }
   }
 
   raw = addEnvOverrides(raw);

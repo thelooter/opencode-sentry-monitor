@@ -1,7 +1,6 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { PluginInput } from "@opencode-ai/plugin";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadPluginConfig, type PluginLogger } from "../src/config.js";
 
@@ -33,8 +32,8 @@ let project: string;
 let home: string;
 let logger: PluginLogger;
 
-function load() {
-  return loadPluginConfig({ directory: project } as PluginInput, logger);
+function load(options?: Record<string, unknown>) {
+  return loadPluginConfig({ directory: project, options }, logger);
 }
 
 async function writeProjectConfig(
@@ -180,6 +179,45 @@ describe("loadPluginConfig", () => {
       environment: "staging",
       tags: { team: "platform", source: "env", developer: "eve" },
     });
+  });
+
+  it("accepts config from OpenCode plugin options", async () => {
+    const loaded = await load({ dsn: DSN, agentName: "options" });
+
+    expect(loaded?.source).toBe("plugin options");
+    expect(loaded?.config.agentName).toBe("options");
+  });
+
+  it("layers plugin options between the config file and the environment", async () => {
+    const filePath = await writeProjectConfig({
+      dsn: DSN,
+      agentName: "file",
+      projectName: "file",
+      environment: "file",
+    });
+    vi.stubEnv("SENTRY_ENVIRONMENT", "env");
+
+    const loaded = await load({ agentName: "options", environment: "options" });
+
+    expect(loaded?.source).toBe(filePath);
+    expect(loaded?.config).toMatchObject({
+      projectName: "file",
+      agentName: "options",
+      environment: "env",
+    });
+  });
+
+  it("also looks in the project root when opened in a subdirectory", async () => {
+    const filePath = await writeProjectConfig({ dsn: DSN });
+    const subdirectory = join(project, "packages", "app");
+    await mkdir(subdirectory, { recursive: true });
+
+    const loaded = await loadPluginConfig(
+      { directory: subdirectory, projectDirectory: project },
+      logger,
+    );
+
+    expect(loaded?.source).toBe(filePath);
   });
 
   it("ignores environment values it cannot parse", async () => {
